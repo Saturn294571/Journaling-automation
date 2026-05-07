@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Accounting Journal Automation</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>Accounting Journal Automation</h1>
+          <p class="subtitle">증빙 이미지를 업로드하면 OCR과 Ollama sLLM으로 분개 초안을 생성합니다.</p>
+        </div>
+        <div class="model-pill">Ollama model: {{ ollama_model }}</div>
+      </header>
+
+      <section class="layout">
+        <div class="upload-panel">
+          <form id="uploadForm">
+            <div id="dropzone" class="dropzone">
+              <input id="fileInput" class="file-input" type="file" name="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" />
+              <button id="resetButton" class="reset-button" type="button" title="다시 업로드">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+              <img id="preview" class="preview" alt="업로드한 증빙 이미지 미리보기" />
+              <div class="upload-empty">
+                <div class="upload-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 17.5V6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z" fill="none" stroke="currentColor" stroke-width="1.8" />
+                    <path d="m8 14 2.2-2.2a1 1 0 0 1 1.4 0L14 14.2l1-1a1 1 0 0 1 1.4 0L20 16.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    <circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" />
+                  </svg>
+                </div>
+                <strong>Please upload the image</strong>
+                <span>jpg, jpeg, png / 최대 10MB</span>
+              </div>
+            </div>
+            <button id="submitButton" class="primary-button" type="submit" disabled>분개 생성</button>
+            <div id="errorBox" class="error" role="alert"></div>
+          </form>
+
+          {% if recent_uploads %}
+          <aside class="recent">
+            <h2>최근 저장 내역</h2>
+            <ul>
+              {% for item in recent_uploads %}
+              <li>#{{ item.id }} {{ item.original_filename }} · {{ item.status }} · {{ item.created_at }}</li>
+              {% endfor %}
+            </ul>
+          </aside>
+          {% endif %}
+        </div>
+
+        <div class="result-panel">
+          <div id="loading" class="loading">
+            <span class="spinner" aria-hidden="true"></span>
+            <span>OCR 및 분개 생성 중입니다.</span>
+          </div>
+          <div id="emptyState" class="state">업로드 후 결과가 여기에 표시됩니다.</div>
+          <div id="resultContent" class="result-content">
+            <div id="summary" class="summary"></div>
+            <details open>
+              <summary>OCR 추출 텍스트</summary>
+              <pre id="ocrText" class="ocr-text"></pre>
+            </details>
+            <div id="tableArea" class="table-wrap"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("uploadForm");
+      const fileInput = document.getElementById("fileInput");
+      const dropzone = document.getElementById("dropzone");
+      const preview = document.getElementById("preview");
+      const resetButton = document.getElementById("resetButton");
+      const submitButton = document.getElementById("submitButton");
+      const errorBox = document.getElementById("errorBox");
+      const loading = document.getElementById("loading");
+      const emptyState = document.getElementById("emptyState");
+      const resultContent = document.getElementById("resultContent");
+      const summary = document.getElementById("summary");
+      const ocrText = document.getElementById("ocrText");
+      const tableArea = document.getElementById("tableArea");
+
+      let objectUrl = null;
+
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        clearError();
+        clearResult();
+        if (!file) {
+          resetUpload();
+          return;
+        }
+        if (!["image/jpeg", "image/png"].includes(file.type)) {
+          showError("jpg, jpeg, png 이미지 파일만 업로드할 수 있습니다.");
+          resetUpload();
+          return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          showError("파일 크기는 10MB 이하만 허용됩니다.");
+          resetUpload();
+          return;
+        }
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        objectUrl = URL.createObjectURL(file);
+        preview.src = objectUrl;
+        dropzone.classList.add("has-image");
+        submitButton.disabled = false;
+      });
+
+      resetButton.addEventListener("click", resetUpload);
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        clearError();
+        const file = fileInput.files[0];
+        if (!file) {
+          showError("업로드할 이미지를 선택해 주세요.");
+          return;
+        }
+
+        setLoading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const response = await fetch("/api/process", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || "처리 중 오류가 발생했습니다.");
+          }
+          renderResult(data);
+        } catch (error) {
+          showError(error.message || "처리 중 오류가 발생했습니다.");
+          clearResult();
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      function resetUpload() {
+        fileInput.value = "";
+        submitButton.disabled = true;
+        preview.removeAttribute("src");
+        dropzone.classList.remove("has-image");
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+          objectUrl = null;
+        }
+      }
+
+      function setLoading(active) {
+        loading.classList.toggle("active", active);
+        submitButton.disabled = active || !fileInput.files[0];
+      }
+
+      function clearError() {
+        errorBox.textContent = "";
+      }
+
+      function showError(message) {
+        errorBox.textContent = message;
+      }
+
+      function clearResult() {
+        emptyState.style.display = "block";
+        resultContent.classList.remove("active");
+        summary.textContent = "";
+        ocrText.textContent = "";
+        tableArea.innerHTML = "";
+      }
+
+      function renderResult(data) {
+        emptyState.style.display = "none";
+        resultContent.classList.add("active");
+        ocrText.textContent = data.ocr_text || "";
+
+        const result = data.result || {};
+        summary.textContent = result.reason || "분개 결과가 생성되었습니다.";
+
+        if (result.status === "insufficient_information" || !data.lines.length) {
+          tableArea.innerHTML = '<div class="empty-result">증빙 정보가 부족하여 분개를 생성하지 않았습니다.</div>';
+          return;
+        }
+
+        const rows = data.lines
+          .map((line) => {
+            return `<tr>
+              <td>${escapeHtml(line.no)}</td>
+              <td>${escapeHtml(line.date)}</td>
+              <td>${escapeHtml(line.account)}</td>
+              <td>${escapeHtml(line.description)}</td>
+              <td class="num">${formatAmount(line.debit)}</td>
+              <td class="num">${formatAmount(line.credit)}</td>
+            </tr>`;
+          })
+          .join("");
+
+        tableArea.innerHTML = `<table>
+          <thead>
+            <tr>
+              <th>No.</th>
+              <th>Date</th>
+              <th>Account</th>
+              <th>Description</th>
+              <th class="num">Debit</th>
+              <th class="num">Credit</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+      }
+
+      function formatAmount(value) {
+        const number = Number(value || 0);
+        return number ? number.toLocaleString("ko-KR") : "";
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+    </script>
+  </body>
+</html>

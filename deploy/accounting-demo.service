@@ -1,0 +1,17 @@
+[Unit]
+Description=Accounting Journal Automation Demo
+After=network-online.target ollama.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=accountingdemo
+Group=accountingdemo
+WorkingDirectory=/opt/accounting-demo
+EnvironmentFile=/opt/accounting-demo/.env
+ExecStart=/opt/accounting-demo/.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

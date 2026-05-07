@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+.venv/
+.deps/
+accounting_demo.sqlite3
+uploads/*
+!uploads/.gitkeep

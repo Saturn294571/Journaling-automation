@@ -1,0 +1,9 @@
+.git/
+.venv/
+.deps/
+__pycache__/
+*.pyc
+accounting_demo.sqlite3
+uploads/*
+!uploads/.gitkeep
+accounting-demo.zip
