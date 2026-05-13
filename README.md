@@ -104,3 +104,46 @@ DB에는 업로드 파일명, 저장 파일명, OCR 텍스트, Ollama 프롬프�
 - 허용 계정과목은 요구사항의 기본 계정 목록으로 제한했습니다.
 - 발표 데모 범위에 맞춰 거래는 최대 3개까지 검증합니다.
 - 실제 회계 판단을 대체하는 서비스가 아니라 수업 발표용 프로토타입입니다.
+
+
+contents of PPT
+
+1. introduction/why our model? -> marcus
+    - intro : members/topics (simply)
+        - why our model needs? : news/reports scraping of needs of auto accounting
+    - background / problems: 
+        - Current Problems in Accounting
+            - Manual journalizing takes too much time
+            - Human errors frequently occur
+            - Companies process many invoices every day Repetitive accounting tasks reduce efficiency
+    - Example
+        - Employees manually input invoice information into accounting system
+
+2. Development -> dong ju
+    - model structure
+        - frontend (part that directly interact with user. ; client computer side)
+        - backend (part that mainy processing data; server computer side)
+        - deploymnet (part that actually running backend system; online cloud computer)
+    - data flow
+        - image upload -> text recognization(by OCR) -> accounting(by sLLM) -> result save(by SQLite) -> display at screen
+    - short demo/examples : (dealing with outside of PPT)
+
+3. accounting concepts in our projects : breif explanations/definitions of each concepts that we learned at class -> dong ju
+    - journaling
+    - realization of transaction
+    - accounting transaction
+
+4. future usage/usefulness -> thao
+    - practical usage example of our project
+        - reduce time/efficiency loss of daily repeated accounting
+        - because of saved time, junior accounter can focus on more important/hard problem
+    - further useful regions beyond our example
+	    - usage on small business that cannot hire professional accounter
+        - indivisuals who wants to manages finacial statement but don't want to expensive private banking service
+5. limitation & further works -> thao
+    - limitation of our project
+        - still needs professional accounter's corrections because AI isn't always correct
+        - it critically depends on Image's quality(blurness, character size, ect.)
+        - it might cause compay's huge loss if AI-model wrong at important trasactions or large amounts of money 
+    - future works
+        - adding more accounting/Human resources/Product management features to make small AI-based ERP(Enterprise Resource Planning) system

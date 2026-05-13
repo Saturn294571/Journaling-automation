@@ -40,6 +40,7 @@
               </div>
             </div>
             <button id="submitButton" class="primary-button" type="submit" disabled>분개 생성</button>
+            <button id="debugButton" class="secondary-button" type="button" disabled>OCR 추론 보기</button>
             <div id="errorBox" class="error" role="alert"></div>
           </form>
 
@@ -68,6 +69,10 @@
               <pre id="ocrText" class="ocr-text"></pre>
             </details>
             <div id="tableArea" class="table-wrap"></div>
+            <details id="debugDetails">
+              <summary>디버그 추론</summary>
+              <pre id="debugInference" class="ocr-text"></pre>
+            </details>
           </div>
         </div>
       </section>
@@ -80,6 +85,7 @@
       const preview = document.getElementById("preview");
       const resetButton = document.getElementById("resetButton");
       const submitButton = document.getElementById("submitButton");
+      const debugButton = document.getElementById("debugButton");
       const errorBox = document.getElementById("errorBox");
       const loading = document.getElementById("loading");
       const emptyState = document.getElementById("emptyState");
@@ -87,6 +93,7 @@
       const summary = document.getElementById("summary");
       const ocrText = document.getElementById("ocrText");
       const tableArea = document.getElementById("tableArea");
+      const debugInference = document.getElementById("debugInference");
 
       let objectUrl = null;
 
@@ -113,6 +120,7 @@
         preview.src = objectUrl;
         dropzone.classList.add("has-image");
         submitButton.disabled = false;
+        debugButton.disabled = false;
       });
 
       resetButton.addEventListener("click", resetUpload);
@@ -135,7 +143,7 @@
             method: "POST",
             body: formData,
           });
-          const data = await response.json();
+          const data = await readResponse(response);
           if (!response.ok) {
             throw new Error(data.error || "처리 중 오류가 발생했습니다.");
           }
@@ -148,9 +156,39 @@
         }
       });
 
+      debugButton.addEventListener("click", async () => {
+        clearError();
+        const file = fileInput.files[0];
+        if (!file) {
+          showError("업로드할 이미지를 선택해 주세요.");
+          return;
+        }
+
+        setLoading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const response = await fetch("/api/debug-infer", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await readResponse(response);
+          if (!response.ok) {
+            throw new Error(data.error || "디버그 추론 중 오류가 발생했습니다.");
+          }
+          renderDebug(data);
+        } catch (error) {
+          showError(error.message || "디버그 추론 중 오류가 발생했습니다.");
+        } finally {
+          setLoading(false);
+        }
+      });
+
       function resetUpload() {
         fileInput.value = "";
         submitButton.disabled = true;
+        debugButton.disabled = true;
         preview.removeAttribute("src");
         dropzone.classList.remove("has-image");
         if (objectUrl) {
@@ -162,6 +200,7 @@
       function setLoading(active) {
         loading.classList.toggle("active", active);
         submitButton.disabled = active || !fileInput.files[0];
+        debugButton.disabled = active || !fileInput.files[0];
       }
 
       function clearError() {
@@ -178,6 +217,7 @@
         summary.textContent = "";
         ocrText.textContent = "";
         tableArea.innerHTML = "";
+        debugInference.textContent = "";
       }
 
       function renderResult(data) {
@@ -233,6 +273,31 @@
           .replace(/>/g, "&gt;")
           .replace(/"/g, "&quot;")
           .replace(/'/g, "&#039;");
+      }
+
+      function renderDebug(data) {
+        emptyState.style.display = "none";
+        resultContent.classList.add("active");
+        summary.textContent = "OCR 텍스트를 바탕으로 한 모델의 자유 추론입니다. 검증된 분개 결과가 아닙니다.";
+        ocrText.textContent = data.ocr_text || "";
+        tableArea.innerHTML = "";
+        debugInference.textContent = data.debug_inference || "디버그 추론이 비어 있습니다.";
+      }
+
+      async function readResponse(response) {
+        const contentType = response.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          return response.json();
+        }
+
+        const text = await response.text();
+        if (response.status === 413) {
+          return { error: "업로드 이미지가 서버 허용 크기를 초과했습니다. 사진을 압축하거나 잘라서 다시 업로드해 주세요." };
+        }
+        if (response.status === 502 || response.status === 503 || response.status === 504) {
+          return { error: "서버 처리 시간이 길어졌습니다. 더 선명하고 작은 이미지로 다시 시도해 주세요." };
+        }
+        return { error: text.trim() || "서버가 예상하지 못한 응답을 반환했습니다." };
       }
     </script>
   </body>

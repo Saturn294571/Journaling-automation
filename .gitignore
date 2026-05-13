@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 .venv/
 .deps/
+.gcloud-config/
 accounting_demo.sqlite3
 uploads/*
 !uploads/.gitkeep

@@ -192,6 +192,25 @@ h1 {
   background: #96a4a1;
 }
 
+.secondary-button {
+  width: 100%;
+  margin-top: 10px;
+  min-height: 42px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  color: var(--accent-strong);
+  background: #f6fbfa;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.secondary-button:disabled {
+  cursor: not-allowed;
+  color: #7a8784;
+  border-color: #b7c2bf;
+  background: #eef2f1;
+}
+
 .error {
   margin-top: 12px;
   color: var(--danger);

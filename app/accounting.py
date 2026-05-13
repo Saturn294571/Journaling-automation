@@ -38,8 +38,8 @@ class NormalizedLine:
     transaction_date: str
     account: str
     description: str
-    debit: int
-    credit: int
+    debit: int | float
+    credit: int | float
 
 
 def parse_model_json(raw_text: str) -> dict[str, Any]:
@@ -115,8 +115,8 @@ def validate_and_normalize(data: dict[str, Any]) -> tuple[dict[str, Any], list[N
         if not isinstance(lines, list) or not lines:
             raise JournalValidationError("분개 라인이 비어 있습니다.")
 
-        debit_total = 0
-        credit_total = 0
+        debit_total = Decimal("0")
+        credit_total = Decimal("0")
         normalized_lines: list[dict[str, Any]] = []
 
         for line in lines:
@@ -131,15 +131,17 @@ def validate_and_normalize(data: dict[str, Any]) -> tuple[dict[str, Any], list[N
             if not description:
                 raise JournalValidationError("분개 설명이 비어 있습니다.")
 
-            debit = _coerce_amount(line.get("debit", 0), "차변 금액")
-            credit = _coerce_amount(line.get("credit", 0), "대변 금액")
+            debit_amount = _coerce_amount(line.get("debit", 0), "차변 금액")
+            credit_amount = _coerce_amount(line.get("credit", 0), "대변 금액")
+            debit = _json_amount(debit_amount)
+            credit = _json_amount(credit_amount)
             if debit > 0 and credit > 0:
                 raise JournalValidationError("한 분개 라인에 차변과 대변 금액이 동시에 입력되었습니다.")
             if debit == 0 and credit == 0:
                 raise JournalValidationError("금액이 0인 분개 라인이 포함되어 있습니다.")
 
-            debit_total += debit
-            credit_total += credit
+            debit_total += debit_amount
+            credit_total += credit_amount
 
             normalized_line = {
                 "account": account,
@@ -161,7 +163,7 @@ def validate_and_normalize(data: dict[str, Any]) -> tuple[dict[str, Any], list[N
 
         if debit_total != credit_total:
             raise JournalValidationError(
-                f"{no}번 거래의 차변 합계({debit_total:,})와 대변 합계({credit_total:,})가 일치하지 않습니다."
+                f"{no}번 거래의 차변 합계({_json_amount(debit_total):,})와 대변 합계({_json_amount(credit_total):,})가 일치하지 않습니다."
             )
 
         normalized_transactions.append(
@@ -170,8 +172,8 @@ def validate_and_normalize(data: dict[str, Any]) -> tuple[dict[str, Any], list[N
                 "date": date,
                 "evidence_summary": evidence_summary,
                 "lines": normalized_lines,
-                "debit_total": debit_total,
-                "credit_total": credit_total,
+                "debit_total": _json_amount(debit_total),
+                "credit_total": _json_amount(credit_total),
             }
         )
 
@@ -198,7 +200,7 @@ def _coerce_int(value: Any, label: str) -> int:
         raise JournalValidationError(f"{label}이 숫자가 아닙니다.") from exc
 
 
-def _coerce_amount(value: Any, label: str) -> int:
+def _coerce_amount(value: Any, label: str) -> Decimal:
     if isinstance(value, str):
         value = value.replace(",", "").strip()
         if value == "":
@@ -209,8 +211,14 @@ def _coerce_amount(value: Any, label: str) -> int:
     except (InvalidOperation, ValueError) as exc:
         raise JournalValidationError(f"{label}을 숫자로 해석할 수 없습니다.") from exc
 
-    if amount != amount.to_integral_value():
-        raise JournalValidationError(f"{label}은 정수 KRW 금액이어야 합니다.")
     if amount < 0:
         raise JournalValidationError(f"{label}은 음수일 수 없습니다.")
-    return int(amount)
+    if amount.quantize(Decimal("0.01")) != amount:
+        raise JournalValidationError(f"{label}은 소수점 둘째 자리까지만 허용됩니다.")
+    return amount
+
+
+def _json_amount(amount: Decimal) -> int | float:
+    if amount == amount.to_integral_value():
+        return int(amount)
+    return float(amount)

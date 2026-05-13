@@ -12,7 +12,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.accounting import JournalValidationError, parse_model_json, validate_and_normalize
 from app.database import get_recent_uploads, init_db, save_result
-from app.llm import OLLAMA_MODEL, OllamaError, build_prompt, generate_journal
+from app.llm import OLLAMA_MODEL, OllamaError, build_debug_prompt, build_prompt, generate_debug_inference, generate_journal
 from app.ocr import OcrError, extract_text
 
 
@@ -129,6 +129,51 @@ async def process_upload(file: UploadFile = File(...)) -> JSONResponse:
                 }
                 for line in lines
             ],
+        }
+    )
+
+
+@app.post("/api/debug-infer")
+async def debug_infer(file: UploadFile = File(...)) -> JSONResponse:
+    original_filename = file.filename or "uploaded-image"
+    extension = Path(original_filename).suffix.lower()
+    content_type = file.content_type or ""
+
+    if extension not in ALLOWED_EXTENSIONS or content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(status_code=400, detail="jpg, jpeg, png 이미지 파일만 업로드할 수 있습니다.")
+
+    content = await file.read()
+    file_size = len(content)
+    if file_size == 0:
+        raise HTTPException(status_code=400, detail="빈 파일은 업로드할 수 없습니다.")
+    if file_size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="파일 크기는 10MB 이하만 허용됩니다.")
+
+    stored_filename = f"debug-{uuid4().hex}{extension}"
+    stored_path = UPLOAD_DIR / stored_filename
+    stored_path.write_bytes(content)
+    logger.info("Debug upload saved: original=%s stored=%s size=%s", original_filename, stored_filename, file_size)
+
+    try:
+        ocr_text = extract_text(stored_path)
+        prompt = build_debug_prompt(ocr_text)
+        inference = generate_debug_inference(prompt)
+    except OcrError as exc:
+        logger.warning("Debug OCR failed for %s: %s", stored_filename, exc)
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except OllamaError as exc:
+        logger.warning("Debug Ollama failed for %s: %s", stored_filename, exc)
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Unexpected debug failure for %s", stored_filename)
+        raise HTTPException(status_code=500, detail="디버그 추론 중 알 수 없는 오류가 발생했습니다.") from exc
+
+    return JSONResponse(
+        {
+            "image_url": f"/uploads/{stored_filename}",
+            "original_filename": original_filename,
+            "ocr_text": ocr_text,
+            "debug_inference": inference,
         }
     )
 
