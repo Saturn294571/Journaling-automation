@@ -134,4 +134,4 @@ HTML / CSS / JavaScript / FastAPI / Tesseract / Ollama / SQLite / Google Cloud V
 
 # Q&A
 ### Demo URL : http://34.64.197.230
-### Github : 
+### Github : https://github.com/Saturn294571/Journaling-automation
