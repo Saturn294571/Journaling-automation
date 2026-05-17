@@ -1,0 +1,7 @@
+{
+  "markdown.marp.themes": [
+    "./Presentation/schema.css",
+    "./Presentation/structure.css",
+    "./Presentation/plato.css"
+  ]
+}

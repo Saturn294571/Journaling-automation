@@ -1,16 +1,54 @@
 # Presentation Script Draft
 
-## Dong Ju Part: Development and Accounting Concepts
+## 1. Introduction / Why Our Model?
 
-Target time: about 10 minutes
+### Introduction
 
-- Development: about 7 minutes
-- Accounting concepts: about 3 minutes
-- Live demo inside the development part: about 3 minutes
+Good afternoon everyone.
+We are Team 3, and today we will present our project called "Journalizing Automation based on OCR and sLLM."
+First, let me briefly introduce today's topic.
+
+Our project focuses on how AI technology can support accounting work, especially the journalizing process.
+We developed a system that can automatically analyze receipt or invoice images and generate draft journal entries using OCR and AI technologies.
+The purpose of this project is not to replace accountants, but to support them by reducing repetitive accounting work and improving efficiency.
+
+### Background
+
+Nowadays, companies process a huge number of invoices and receipts every day.
+However, journalizing is still often done manually.
+Because of this, several problems occur.
+
+First, manual journalizing takes too much time because accountants must repeatedly check transaction details and enter debit and credit information manually.
+
+Second, human errors frequently occur during repetitive work.
+For example, accountants may enter incorrect amounts or wrong account titles.
+
+Third, repetitive accounting tasks reduce overall work efficiency.
+Instead of focusing on financial analysis or decision-making, accountants often spend too much time on simple data entry tasks.
+
+As a result, many companies are becoming more interested in accounting automation systems.
+
+### Why OCR and sLLM?
+
+That is why our team chose OCR and sLLM for this project.
+
+OCR, which stands for Optical Character Recognition, is a technology that reads text from images.
+For example, OCR can extract dates, seller names, amounts, and payment information from receipts or invoices.
+However, OCR only reads text.
+It cannot understand the accounting meaning of the transaction.
+
+So we added an sLLM, which means a small Large Language Model.
+The sLLM reads the OCR text, analyzes the transaction context, and generates a draft journal entry automatically.
+
+In simple words:
+OCR reads the text
+sLLM understands the transaction
+
+We believed that combining these two technologies could effectively support accounting automation and reduce repetitive accounting work.
 
 ---
 
-## 2. Development Part
+## 2. Development
 
 Target time: about 7 minutes
 
@@ -126,7 +164,7 @@ This structure can reduce repetitive accounting input work, especially when a co
 
 ---
 
-## 3. Accounting Concepts Part
+## 3. Accounting Concepts In Our Project
 
 Target time: about 3 minutes
 
@@ -187,3 +225,61 @@ As a result, the journal entry becomes Office Supplies Expense debit 154.06 and 
 So even though our project uses OCR and AI, its final goal is connected to the basic accounting process: identifying a transaction and recording it through journaling.
 
 ---
+
+## 4. Future Usage / Usefulness
+
+Now, I will explain the future usage and usefulness of our project.
+
+One of the biggest advantages of this system is reducing repetitive accounting work.
+In many companies, accountants spend a large amount of time processing invoices, receipts, and journal entries every day.
+Although these tasks are important, they are also repetitive and time-consuming.
+
+Our system can automatically generate draft journal entries from receipt or invoice images, so it can reduce manual data entry work and improve overall efficiency.
+For example, instead of manually checking hundreds of invoices one by one, accountants can quickly review AI-generated drafts and focus on verification.
+This can save a significant amount of time, especially for companies that process many transactions every day.
+
+Another important point is that junior accountants can focus more on difficult or meaningful tasks.
+Normally, junior accountants spend a lot of time on repetitive basic journalizing work.
+However, if AI handles simple repetitive tasks, they can spend more time learning financial analysis, problem solving, and decision-making processes.
+In other words, AI can support accountants rather than replace them.
+
+In addition, our project can also be useful outside large companies.
+For example, many small businesses cannot afford to hire professional accountants or purchase expensive accounting systems.
+For those businesses, an AI-assisted accounting tool could become a low-cost and accessible solution.
+Business owners could upload receipts and automatically organize simple accounting records without advanced accounting knowledge.
+
+Our system may also help individuals who want to manage personal financial statements or expenses.
+Some people want to manage their finances more systematically but do not want to pay for expensive private banking or financial consulting services.
+In that case, AI-based accounting support tools could become a practical alternative.
+
+As AI technology continues to develop, we believe these kinds of systems may become more common in daily business and financial management.
+
+---
+
+## 5. Limitations and Future Work
+
+However, our project still has several limitations.
+
+First, the system still requires professional accountants to review and correct the results.
+Although AI can generate reasonable journal entries, it is not always perfectly accurate.
+Sometimes the AI model may misunderstand the transaction context or choose incorrect account titles.
+Because accounting directly affects financial records and business decisions, human validation is still very important.
+
+Second, our system heavily depends on image quality.
+If the uploaded image is blurry, tilted, dark, or contains very small text, OCR performance may decrease significantly.
+As a result, incorrect OCR text can lead to incorrect accounting results.
+
+Third, AI mistakes may become very risky in important transactions or large amounts of money.
+For example, if the AI incorrectly classifies a major financial transaction, it could cause accounting errors or financial losses for the company.
+Therefore, our current system should be considered an assistant tool rather than a fully autonomous accounting system.
+
+Despite these limitations, we believe this project still has strong future potential.
+
+In future work, we plan to expand the system beyond journalizing automation.
+For example, we want to add more accounting features, human resources management functions, and product management functions.
+Our long-term goal is to develop a small AI-based ERP system.
+ERP stands for Enterprise Resource Planning, which is a system that integrates multiple business management functions into one platform.
+If we combine accounting automation with HR and inventory management, small businesses may be able to manage their operations more efficiently using a single AI-supported system.
+
+In the future, we also hope to improve OCR accuracy, strengthen AI validation systems, and support multilingual invoice processing.
+Through these improvements, we believe AI-based accounting systems can become more practical, reliable, and useful in real business environments.
